@@ -1,0 +1,122 @@
+int inputPin = D4;              // choose the input pin (for PIR sensor)
+int ledPin = D2;                // LED Pin
+int pirState = LOW;             // we start, assuming no motion detected
+int val = 0;                    // variable for reading the pin status
+int soundPin = A0; 
+int Loud = 27;
+int sound;
+
+int calibrateTime = 20000;      
+
+
+void setup()
+{
+  pinMode( ledPin, OUTPUT );
+  pinMode(inputPin, INPUT);  
+  pinMode(soundPin, INPUT);// declare sensor as input
+ 
+}
+
+void loop()
+{
+
+ // if the sensor is calibrated
+  if ( calibrated() )
+  {
+  // get the data from the sensor
+  readTheSensor();
+  // report it out, if the state has changed
+  reportTheData();
+    
+    
+  readTheSound();
+  reportTheSound();
+    
+    
+  }
+}
+
+void readTheSensor() {
+  val = digitalRead(inputPin);
+}
+
+bool calibrated() {
+  return millis() - calibrateTime > 0;
+}
+
+void reportTheData() {
+
+     String data = String(10);
+  // if the sensor reads high
+  // or there is now motion
+  if (val == HIGH) {
+
+    // the current state is no motion
+    // i.e. it's just changed
+    // announce this change by publishing an event
+    if (pirState == LOW) {
+      // we have just turned on
+      Particle.publish("MOTION", "motion", PUBLIC);
+  // Wait 20 minutes
+    delay(20000);
+      
+      
+      // Update the current state
+      pirState = HIGH;
+      Particle.publish("LIGHTS OUT", "lights out", PUBLIC);
+      setLED( pirState );
+      
+      
+    }
+  } else {
+    if (pirState == HIGH) {
+      // we have just turned of
+      // Update the current state
+      pirState = LOW;
+      Particle.publish("MOTION", "motion", PUBLIC);
+      delay(10000);
+      setLED( pirState );
+    }
+    
+    
+  }
+}
+
+
+
+
+void readTheSound() 
+{
+sound = analogRead(soundPin);
+}
+
+void reportTheSound() {
+
+  // if the sensor reads high
+  // or there is now motion
+  
+  
+  if (sound > Loud) {
+      
+    
+      Particle.publish("SOUND", "sound", PUBLIC);
+      delay(200000);
+      // Update the current state
+      pirState = HIGH;
+      
+      
+      Particle.publish("LIGHTS OUT", "lights out", PUBLIC);
+      setLED( pirState );
+      
+      
+      
+    }
+
+}
+
+
+
+void setLED( int state )
+{
+  digitalWrite( ledPin, state );
+}
